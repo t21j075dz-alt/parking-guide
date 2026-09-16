@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#005ea8">
     <meta
       name="description"
-      content="現在地周辺の駐車場から、希望に合う空き区画を案内する卒業研究用の試作画面です。"
+      content="現在地周辺の駐車場から、希望に合う空き区画を案内する卒業研究用の試作画面"
     >
     <title>駐車場空き区画案内｜卒業研究試作</title>
 
-    <!-- 駐車位置を表す「P」を使った、このサイト専用の簡易アイコンです。 -->
+    <!-- 駐車位置を表す「P」を使った、このサイト専用の簡易アイコン -->
     <link
       rel="icon"
       type="image/svg+xml"
@@ -21,7 +21,7 @@
   </head>
 
   <body>
-    <!-- キーボード操作時に、共通部分を飛ばして本文へ移動できます。 -->
+    <!-- キーボード操作時に、共通部分を飛ばして本文へ移動 -->
     <a class="skip-link" href="#main-content">本文へ移動</a>
 
     <header class="site-header">
@@ -31,7 +31,7 @@
           <span>駐車場空き区画案内</span>
         </a>
 
-        <!-- 文字サイズ設定は端末内に保存し、次回も同じ設定で表示します。 -->
+        <!-- 文字サイズ設定は端末内に保存し、次回も同じ設定で表示 -->
         <button
           class="display-button"
           id="text-size-button"
@@ -44,7 +44,7 @@
     </header>
 
     <main id="main-content" class="main-content" tabindex="-1">
-      <!-- 4画面のうち、現在どこまで進んでいるかを常に確認できます。 -->
+      <!-- 4画面のうち、現在どこまで進んでいるかを常に確認可能。 -->
       <nav class="progress" aria-label="案内の進行状況">
         <ol class="progress-list">
           <li class="progress-item is-current" data-progress="facility" aria-current="step">
@@ -69,14 +69,14 @@
       <!-- 現在はカメラと接続していないため、誤解がないよう全画面で明示します。 -->
       <aside class="demo-notice" aria-label="デモデータについて">
         <strong>研究用デモ</strong>
-        <span>空き台数・距離・区画情報は動作確認用の仮データです。</span>
+        <span>カメラ未接続のため空き台数・距離・区画情報は動作確認用の仮データです。</span>
       </aside>
 
       <!-- 画面1：現在地の取得と駐車場の選択 -->
       <section class="screen" id="facility-screen" data-screen="facility" aria-labelledby="facility-title">
         <div class="screen-heading">
           <p class="step-label">STEP 1</p>
-          <h1 id="facility-title" tabindex="-1">利用する駐車場を選ぶ</h1>
+          <h1 id="facility-title" tabindex="-1">利用する駐車場を選択</h1>
           <p>現在地を取得すると、登録した駐車場までの距離を計算できます。</p>
         </div>
 
@@ -121,7 +121,7 @@
                 <input type="radio" name="priority" value="balanced" checked>
                 <span class="choice-content">
                   <span class="choice-title">おまかせ</span>
-                  <span class="choice-description">入口までの距離と停めやすさをもとに選びます</span>
+                  <span class="choice-description">入口までの距離と停めやすさをもとに自動的に選択します</span>
                 </span>
               </label>
 
@@ -129,7 +129,7 @@
                 <input type="radio" name="priority" value="near">
                 <span class="choice-content">
                   <span class="choice-title">入口に近い</span>
-                  <span class="choice-description">できるだけ歩く距離が短い区画を選びます</span>
+                  <span class="choice-description">できるだけ歩く距離が短い駐車枠を自動的に選択します</span>
                 </span>
               </label>
 
@@ -137,13 +137,13 @@
                 <input type="radio" name="priority" value="wide">
                 <span class="choice-content">
                   <span class="choice-title">幅にゆとりがある</span>
-                  <span class="choice-description">乗り降りしやすい広めの一般区画を選びます</span>
+                  <span class="choice-description">乗り降りしやすい枠が広めの一般駐車枠を自動的に選択します</span>
                 </span>
               </label>
             </div>
           </fieldset>
 
-          <button class="primary-button full-width" type="submit">空いている区画を探す</button>
+          <button class="primary-button full-width" type="submit">空いている駐車枠を探索</button>
         </form>
       </section>
 
@@ -159,7 +159,7 @@
 
         <div class="screen-heading">
           <p class="step-label">STEP 3</p>
-          <h1 id="result-title" tabindex="-1">おすすめの空き区画</h1>
+          <h1 id="result-title" tabindex="-1">あなたの駐車枠はこちらです</h1>
         </div>
 
         <!-- 検索中と検索完了を同じ領域で読み上げるための状態表示です。 -->
@@ -167,7 +167,7 @@
 
         <div id="result-content" hidden>
           <article class="result-card" aria-labelledby="space-number">
-            <p class="result-eyebrow">この区画へ進んでください</p>
+            <p class="result-eyebrow">この駐車枠に駐車してください。</p>
             <p id="space-number" class="space-number">B-12</p>
             <p id="space-description" class="space-description"></p>
             <div class="result-badges" aria-label="区画の特徴">
@@ -212,8 +212,8 @@
 
         <div class="screen-heading">
           <p class="step-label">STEP 4</p>
-          <h1 id="guide-title" tabindex="-1">区画までの案内</h1>
-          <p>周囲の車と歩行者を確認し、場内ではゆっくり進んでください。</p>
+          <h1 id="guide-title" tabindex="-1">駐車枠まで案内します</h1>
+          <p>周囲の車と歩行者を確認し、場内では画面を注視せずにゆっくり進んでください。</p>
         </div>
 
         <article class="guide-summary">
@@ -257,7 +257,7 @@
 
     <footer class="site-footer">
       <p>岡山理科大学 卒業研究用試作</p>
-      <p>実際の運用時は、カメラによる判定データと正式な駐車場図に置き換えます。</p>
+      <p>試作ページです。</p>
     </footer>
   </body>
 </html>
