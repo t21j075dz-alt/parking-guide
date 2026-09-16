@@ -1,0 +1,943 @@
+/* =========================================================
+   駐車場空き区画案内：共通スタイル
+   色・文字・余白を冒頭の変数に集約し、画面間の統一を保つ。
+   ========================================================= */
+
+:root {
+  color-scheme: light;
+
+  /* 日本語を読みやすくし、外部フォントに依存しない共通書体で表示 */
+  --font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN",
+    "Yu Gothic", "YuGothic", Meiryo, sans-serif;
+
+  /* 文字サイズはremで管理し、ブラウザの拡大設定を反映する */
+  --font-size-body: 1.125rem;
+  --font-size-small: 0.9375rem;
+  --font-size-label: 0.875rem;
+  --font-size-title: clamp(1.75rem, 6vw, 2.5rem);
+  --font-size-heading: clamp(1.35rem, 4.5vw, 1.75rem);
+
+  /* 白背景と十分に差が出る青・濃紺を中心にした配色 */
+  --color-background: #f3f6f9;
+  --color-surface: #ffffff;
+  --color-text: #172033;
+  --color-muted: #4b5563;
+  --color-border: #a9b4c2;
+  --color-primary: #005ea8;
+  --color-primary-dark: #004477;
+  --color-focus: #f5b700;
+  --color-available: #006b54;
+  --color-available-soft: #e8f5f0;
+  --color-warning-soft: #fff4cf;
+  --color-occupied: #4b5563;
+  --color-occupied-soft: #e5e7eb;
+  --color-error: #a2191f;
+
+  --shadow-card: 0 0.3rem 1.2rem rgba(23, 32, 51, 0.08);
+  --radius-small: 0.55rem;
+  --radius-medium: 0.9rem;
+  --radius-large: 1.25rem;
+  --content-width: 56rem;
+}
+
+/* 「文字を大きく」が有効なときは、本文と補足文字をまとめて拡大する。 */
+html[data-font-size="large"] {
+  --font-size-body: 1.3rem;
+  --font-size-small: 1.075rem;
+  --font-size-label: 1rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 20rem;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+a,
+label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+a {
+  color: var(--color-primary-dark);
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.65rem;
+  font-size: var(--font-size-title);
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  margin-bottom: 0.5rem;
+  font-size: var(--font-size-heading);
+  line-height: 1.4;
+}
+
+/* マウス・キーボードのどちらでも、現在位置がはっきり分かる枠線 */
+:focus-visible {
+  outline: 0.22rem solid #111827;
+  outline-offset: 0.2rem;
+  box-shadow: 0 0 0 0.42rem var(--color-focus);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-small);
+  background: var(--color-text);
+  color: #ffffff;
+  font-weight: 700;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* =========================================================
+   ヘッダーと共通レイアウト
+   ========================================================= */
+
+.site-header {
+  border-bottom: 0.25rem solid var(--color-primary);
+  background: var(--color-surface);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(100% - 2rem, var(--content-width));
+  min-height: 4.75rem;
+  margin-inline: auto;
+  gap: 1rem;
+}
+
+.site-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text);
+  font-weight: 800;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.parking-symbol {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 2.55rem;
+  height: 2.55rem;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.display-button,
+.secondary-button,
+.primary-button,
+.back-button,
+.facility-button {
+  min-height: 3rem;
+  border-radius: var(--radius-small);
+  font-weight: 700;
+}
+
+.display-button {
+  flex: 0 0 auto;
+  padding: 0.55rem 0.8rem;
+  border: 0.12rem solid var(--color-primary);
+  background: #ffffff;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-small);
+}
+
+.display-button:hover,
+.secondary-button:hover {
+  background: #edf6fc;
+}
+
+.main-content {
+  width: min(100% - 2rem, var(--content-width));
+  min-height: 72vh;
+  margin-inline: auto;
+  padding-block: 1.25rem 4rem;
+}
+
+.screen {
+  max-width: 46rem;
+  margin-inline: auto;
+}
+
+.screen-heading {
+  margin-bottom: 1.5rem;
+}
+
+.screen-heading > p:last-child {
+  margin-bottom: 0;
+  color: var(--color-muted);
+}
+
+.step-label,
+.sub-label {
+  margin-bottom: 0.2rem;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-label);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* =========================================================
+   進行状況とデモ表示
+   ========================================================= */
+
+.progress {
+  margin-bottom: 1rem;
+}
+
+.progress-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.progress-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 3rem;
+  border-bottom: 0.22rem solid var(--color-border);
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  font-weight: 700;
+  text-align: center;
+}
+
+.progress-item.is-complete,
+.progress-item.is-current {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.progress-item.is-current {
+  background: #e9f3fb;
+}
+
+.progress-number {
+  display: inline-grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border: 0.1rem solid currentColor;
+  border-radius: 50%;
+  font-size: 0.82em;
+  line-height: 1;
+}
+
+.demo-notice {
+  display: flex;
+  max-width: 46rem;
+  margin: 0 auto 2rem;
+  padding: 0.85rem 1rem;
+  gap: 0.65rem;
+  border: 0.12rem solid #a66b00;
+  border-radius: var(--radius-small);
+  background: var(--color-warning-soft);
+  color: #573600;
+  font-size: var(--font-size-small);
+}
+
+.demo-notice strong {
+  flex: 0 0 auto;
+}
+
+/* =========================================================
+   ボタン類
+   ========================================================= */
+
+.primary-button,
+.secondary-button {
+  padding: 0.85rem 1.25rem;
+  border: 0.13rem solid var(--color-primary);
+}
+
+.primary-button {
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 0.18rem 0 #00395f;
+}
+
+.primary-button:hover {
+  background: var(--color-primary-dark);
+}
+
+.primary-button:active {
+  box-shadow: none;
+  transform: translateY(0.12rem);
+}
+
+.secondary-button {
+  background: #ffffff;
+  color: var(--color-primary-dark);
+}
+
+.back-button {
+  margin-bottom: 1rem;
+  padding: 0.45rem 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.button-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.8rem;
+  margin-top: 1.25rem;
+}
+
+/* =========================================================
+   画面1：現在地と駐車場カード
+   ========================================================= */
+
+.location-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  gap: 1rem;
+  border: 0.12rem solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+}
+
+.location-panel p {
+  margin-bottom: 0;
+}
+
+.panel-title {
+  font-weight: 800;
+}
+
+.location-status {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.location-status.is-error {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+.facility-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.facility-card {
+  overflow: hidden;
+  border: 0.12rem solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.facility-button {
+  display: grid;
+  width: 100%;
+  padding: 1.2rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.facility-button:hover {
+  background: #f5faff;
+}
+
+.facility-main {
+  min-width: 0;
+}
+
+.facility-name {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1.12em;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.facility-address,
+.facility-distance {
+  display: block;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+}
+
+.facility-distance {
+  margin-top: 0.35rem;
+}
+
+.availability-block {
+  align-self: center;
+  min-width: 6.3rem;
+  padding: 0.55rem;
+  border: 0.12rem solid var(--color-available);
+  border-radius: var(--radius-small);
+  background: var(--color-available-soft);
+  color: #004c3d;
+  text-align: center;
+}
+
+.availability-label,
+.availability-count {
+  display: block;
+}
+
+.availability-label {
+  font-size: var(--font-size-label);
+}
+
+.availability-count {
+  font-size: 1.15em;
+  font-weight: 800;
+}
+
+.facility-action {
+  grid-column: 1 / -1;
+  padding-top: 0.7rem;
+  border-top: 0.08rem solid #d8dee6;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-small);
+  font-weight: 800;
+  text-align: right;
+}
+
+/* =========================================================
+   画面2：希望条件
+   ========================================================= */
+
+.selected-place {
+  padding: 0.75rem 1rem;
+  border-left: 0.35rem solid var(--color-primary);
+  background: #e9f3fb;
+  color: var(--color-text) !important;
+  font-weight: 700;
+}
+
+.condition-fieldset {
+  margin: 0 0 1.25rem;
+  padding: 0;
+  border: 0;
+}
+
+.condition-fieldset legend {
+  padding: 0;
+  font-size: var(--font-size-heading);
+  font-weight: 800;
+}
+
+.fieldset-help {
+  margin-bottom: 1rem;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.choice-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.choice-card {
+  display: flex;
+  align-items: flex-start;
+  min-height: 5rem;
+  padding: 1rem;
+  gap: 0.85rem;
+  border: 0.13rem solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.choice-card:hover {
+  border-color: var(--color-primary);
+}
+
+.choice-card:has(input:checked) {
+  border: 0.2rem solid var(--color-primary);
+  background: #edf6fc;
+}
+
+.choice-card input {
+  flex: 0 0 auto;
+  width: 1.45rem;
+  height: 1.45rem;
+  margin: 0.2rem 0 0;
+  accent-color: var(--color-primary);
+}
+
+.choice-content,
+.choice-title,
+.choice-description {
+  display: block;
+}
+
+.choice-title {
+  margin-bottom: 0.15rem;
+  font-weight: 800;
+}
+
+.choice-description {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+}
+
+/* =========================================================
+   画面3：結果と区画図
+   ========================================================= */
+
+.search-status:not(:empty) {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-left: 0.35rem solid var(--color-primary);
+  background: #e9f3fb;
+  font-weight: 700;
+}
+
+.result-card {
+  margin-bottom: 1.25rem;
+  padding: 1.35rem;
+  border: 0.18rem solid var(--color-available);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+}
+
+.result-eyebrow {
+  margin-bottom: 0;
+  color: var(--color-available);
+  font-weight: 800;
+}
+
+.space-number {
+  margin-bottom: 0;
+  color: var(--color-text);
+  font-size: clamp(3.4rem, 17vw, 6.4rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.space-description {
+  margin-bottom: 0.8rem;
+  color: var(--color-muted);
+}
+
+.result-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border: 0.1rem solid currentColor;
+  border-radius: 999px;
+  font-size: var(--font-size-small);
+  font-weight: 800;
+}
+
+.status-badge--available {
+  background: var(--color-available-soft);
+  color: #004c3d;
+}
+
+.status-badge--available::before {
+  content: "✓";
+  margin-right: 0.35rem;
+}
+
+.status-badge--priority {
+  background: #e9f3fb;
+  color: var(--color-primary-dark);
+}
+
+.parking-map-section {
+  padding: 1.2rem;
+  border: 0.12rem solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+}
+
+.section-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.section-title-row h2,
+.section-title-row p {
+  margin-bottom: 0;
+}
+
+.updated-time {
+  color: var(--color-muted);
+  font-size: var(--font-size-label);
+  text-align: right;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  margin-block: 1rem;
+  gap: 0.55rem 1rem;
+  font-size: var(--font-size-label);
+}
+
+.map-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-sample {
+  width: 1.5rem;
+  height: 1.15rem;
+  border: 0.12rem solid var(--color-border);
+  border-radius: 0.2rem;
+}
+
+.legend-sample--recommended {
+  border: 0.22rem double var(--color-primary-dark);
+  background: var(--color-warning-soft);
+}
+
+.legend-sample--available {
+  border-color: var(--color-available);
+  background: var(--color-available-soft);
+}
+
+.legend-sample--occupied {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-occupied-soft),
+    var(--color-occupied-soft) 0.35rem,
+    #b6bec8 0.35rem,
+    #b6bec8 0.6rem
+  );
+}
+
+.parking-map {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.parking-space {
+  display: grid;
+  min-height: 5.6rem;
+  place-items: center;
+  padding: 0.45rem;
+  border: 0.13rem solid var(--color-available);
+  border-radius: 0.4rem;
+  background: var(--color-available-soft);
+  color: var(--color-text);
+  text-align: center;
+}
+
+.parking-space.is-occupied {
+  border-color: var(--color-occupied);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-occupied-soft),
+    var(--color-occupied-soft) 0.45rem,
+    #c5cbd3 0.45rem,
+    #c5cbd3 0.75rem
+  );
+}
+
+.parking-space.is-recommended {
+  border: 0.3rem double var(--color-primary-dark);
+  background: var(--color-warning-soft);
+}
+
+.parking-space-number,
+.parking-space-state {
+  display: block;
+}
+
+.parking-space-number {
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.parking-space-state {
+  font-size: var(--font-size-label);
+  font-weight: 700;
+}
+
+.entrance-marker {
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 0.18rem solid var(--color-text);
+  font-weight: 900;
+  text-align: center;
+}
+
+/* =========================================================
+   画面4：案内手順
+   ========================================================= */
+
+.guide-summary {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border-left: 0.4rem solid var(--color-primary);
+  border-radius: 0 var(--radius-medium) var(--radius-medium) 0;
+  background: #e9f3fb;
+}
+
+.guide-summary p {
+  margin-bottom: 0;
+}
+
+.guide-space-number {
+  font-size: 2.4rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.direction-list {
+  display: grid;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  gap: 0.9rem;
+  list-style: none;
+}
+
+.direction-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 1rem;
+  gap: 0.9rem;
+  border: 0.12rem solid var(--color-border);
+  border-radius: var(--radius-medium);
+  background: var(--color-surface);
+}
+
+.direction-list h2 {
+  font-size: 1.05em;
+}
+
+.direction-list h2,
+.direction-list p {
+  margin-bottom: 0;
+}
+
+.direction-list p {
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+}
+
+.direction-number {
+  display: inline-grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.safety-note {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  border: 0.14rem solid #a66b00;
+  border-radius: var(--radius-medium);
+  background: var(--color-warning-soft);
+  color: #573600;
+}
+
+.safety-note p {
+  margin: 0.25rem 0 0;
+}
+
+.site-footer {
+  padding: 1.5rem 1rem 2rem;
+  border-top: 0.12rem solid var(--color-border);
+  background: #e7edf3;
+  color: var(--color-muted);
+  font-size: var(--font-size-small);
+  text-align: center;
+}
+
+.site-footer p {
+  margin-bottom: 0.25rem;
+}
+
+/* =========================================================
+   小さい画面・拡大表示への対応
+   ========================================================= */
+
+@media (max-width: 39rem) {
+  .header-inner {
+    width: min(100% - 1.25rem, var(--content-width));
+  }
+
+  .site-name > span:last-child {
+    max-width: 9.5rem;
+  }
+
+  .main-content {
+    width: min(100% - 1.25rem, var(--content-width));
+  }
+
+  .progress-item {
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-block: 0.35rem;
+  }
+
+  .demo-notice,
+  .location-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .facility-button {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-block {
+    justify-self: stretch;
+  }
+
+  .availability-label,
+  .availability-count {
+    display: inline;
+  }
+
+  .availability-label::after {
+    content: "・";
+  }
+
+  .parking-map {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .button-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 24rem) {
+  .site-name > span:last-child {
+    display: none;
+  }
+
+  .parking-map {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* OSで動きを減らす設定が有効な場合、スクロールの動きも止める。 */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* OSの高コントラスト設定が有効な環境で、境界線をさらに明確にする。 */
+@media (prefers-contrast: more) {
+  :root {
+    --color-border: #515a66;
+    --shadow-card: none;
+  }
+
+  .facility-card,
+  .choice-card,
+  .parking-map-section,
+  .direction-list li {
+    border-width: 0.18rem;
+  }
+}

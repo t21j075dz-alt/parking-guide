@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#005ea8">
+    <meta
+      name="description"
+      content="現在地周辺の駐車場から、希望に合う空き区画を案内する卒業研究用の試作画面です。"
+    >
+    <title>駐車場空き区画案内｜卒業研究試作</title>
+
+    <!-- 駐車位置を表す「P」を使った、このサイト専用の簡易アイコンです。 -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23005ea8'/%3E%3Cpath d='M21 50V14h15c9 0 15 6 15 14S45 42 36 42h-7v8h-8zm8-16h7c4 0 7-2 7-6s-3-6-7-6h-7v12z' fill='white'/%3E%3C/svg%3E"
+    >
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+
+  <body>
+    <!-- キーボード操作時に、共通部分を飛ばして本文へ移動できます。 -->
+    <a class="skip-link" href="#main-content">本文へ移動</a>
+
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="site-name" href="#facility" data-go-home aria-label="駐車場空き区画案内の最初の画面へ戻る">
+          <span class="parking-symbol" aria-hidden="true">P</span>
+          <span>駐車場空き区画案内</span>
+        </a>
+
+        <!-- 文字サイズ設定は端末内に保存し、次回も同じ設定で表示します。 -->
+        <button
+          class="display-button"
+          id="text-size-button"
+          type="button"
+          aria-pressed="false"
+        >
+          文字を大きく
+        </button>
+      </div>
+    </header>
+
+    <main id="main-content" class="main-content" tabindex="-1">
+      <!-- 4画面のうち、現在どこまで進んでいるかを常に確認できます。 -->
+      <nav class="progress" aria-label="案内の進行状況">
+        <ol class="progress-list">
+          <li class="progress-item is-current" data-progress="facility" aria-current="step">
+            <span class="progress-number">1</span>
+            <span>駐車場</span>
+          </li>
+          <li class="progress-item" data-progress="condition">
+            <span class="progress-number">2</span>
+            <span>条件</span>
+          </li>
+          <li class="progress-item" data-progress="result">
+            <span class="progress-number">3</span>
+            <span>区画</span>
+          </li>
+          <li class="progress-item" data-progress="guide">
+            <span class="progress-number">4</span>
+            <span>案内</span>
+          </li>
+        </ol>
+      </nav>
+
+      <!-- 現在はカメラと接続していないため、誤解がないよう全画面で明示します。 -->
+      <aside class="demo-notice" aria-label="デモデータについて">
+        <strong>研究用デモ</strong>
+        <span>空き台数・距離・区画情報は動作確認用の仮データです。</span>
+      </aside>
+
+      <!-- 画面1：現在地の取得と駐車場の選択 -->
+      <section class="screen" id="facility-screen" data-screen="facility" aria-labelledby="facility-title">
+        <div class="screen-heading">
+          <p class="step-label">STEP 1</p>
+          <h1 id="facility-title" tabindex="-1">利用する駐車場を選ぶ</h1>
+          <p>現在地を取得すると、登録した駐車場までの距離を計算できます。</p>
+        </div>
+
+        <div class="location-panel">
+          <div>
+            <p class="panel-title">現在地</p>
+            <p id="location-status" class="location-status" role="status" aria-live="polite">
+              まだ取得していません
+            </p>
+          </div>
+          <button class="secondary-button" id="location-button" type="button">
+            現在地を取得
+          </button>
+        </div>
+
+        <div id="facility-list" class="facility-list" aria-label="選択できる駐車場"></div>
+      </section>
+
+      <!-- 画面2：利用者が駐車区画の優先条件を選択 -->
+      <section
+        class="screen"
+        id="condition-screen"
+        data-screen="condition"
+        aria-labelledby="condition-title"
+        hidden
+      >
+        <button class="back-button" type="button" data-back="facility">← 駐車場選択へ戻る</button>
+
+        <div class="screen-heading">
+          <p class="step-label">STEP 2</p>
+          <h1 id="condition-title" tabindex="-1">希望する区画を選ぶ</h1>
+          <p id="selected-facility-name" class="selected-place"></p>
+        </div>
+
+        <form id="condition-form">
+          <fieldset class="condition-fieldset">
+            <legend>何を優先しますか</legend>
+            <p class="fieldset-help">1つ選んでください。あとから変更できます。</p>
+
+            <div class="choice-list">
+              <label class="choice-card">
+                <input type="radio" name="priority" value="balanced" checked>
+                <span class="choice-content">
+                  <span class="choice-title">おまかせ</span>
+                  <span class="choice-description">入口までの距離と停めやすさをもとに選びます</span>
+                </span>
+              </label>
+
+              <label class="choice-card">
+                <input type="radio" name="priority" value="near">
+                <span class="choice-content">
+                  <span class="choice-title">入口に近い</span>
+                  <span class="choice-description">できるだけ歩く距離が短い区画を選びます</span>
+                </span>
+              </label>
+
+              <label class="choice-card">
+                <input type="radio" name="priority" value="wide">
+                <span class="choice-content">
+                  <span class="choice-title">幅にゆとりがある</span>
+                  <span class="choice-description">乗り降りしやすい広めの一般区画を選びます</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <button class="primary-button full-width" type="submit">空いている区画を探す</button>
+        </form>
+      </section>
+
+      <!-- 画面3：判定結果と駐車場内の位置を表示 -->
+      <section
+        class="screen"
+        id="result-screen"
+        data-screen="result"
+        aria-labelledby="result-title"
+        hidden
+      >
+        <button class="back-button" type="button" data-back="condition">← 条件選択へ戻る</button>
+
+        <div class="screen-heading">
+          <p class="step-label">STEP 3</p>
+          <h1 id="result-title" tabindex="-1">おすすめの空き区画</h1>
+        </div>
+
+        <!-- 検索中と検索完了を同じ領域で読み上げるための状態表示です。 -->
+        <div id="search-status" class="search-status" role="status" aria-live="polite"></div>
+
+        <div id="result-content" hidden>
+          <article class="result-card" aria-labelledby="space-number">
+            <p class="result-eyebrow">この区画へ進んでください</p>
+            <p id="space-number" class="space-number">B-12</p>
+            <p id="space-description" class="space-description"></p>
+            <div class="result-badges" aria-label="区画の特徴">
+              <span class="status-badge status-badge--available">空き区画</span>
+              <span id="priority-badge" class="status-badge status-badge--priority"></span>
+            </div>
+          </article>
+
+          <section class="parking-map-section" aria-labelledby="parking-map-title">
+            <div class="section-title-row">
+              <div>
+                <p class="sub-label">駐車場内の位置</p>
+                <h2 id="parking-map-title">B列の区画図</h2>
+              </div>
+              <p id="updated-time" class="updated-time"></p>
+            </div>
+
+            <div class="map-legend" aria-label="区画図の凡例">
+              <span><span class="legend-sample legend-sample--recommended" aria-hidden="true"></span>案内先</span>
+              <span><span class="legend-sample legend-sample--available" aria-hidden="true"></span>空き</span>
+              <span><span class="legend-sample legend-sample--occupied" aria-hidden="true"></span>使用中</span>
+            </div>
+
+            <div id="parking-map" class="parking-map" role="list" aria-label="B列の駐車状況"></div>
+            <p class="entrance-marker"><span aria-hidden="true">↑</span> 店舗入口</p>
+          </section>
+
+          <div class="button-group">
+            <button class="primary-button" id="show-guide-button" type="button">
+              区画までの案内を見る
+            </button>
+            <button class="secondary-button" id="retry-button" type="button">
+              空き状況を更新
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 画面4：駐車場入口から推奨区画までの簡易案内 -->
+      <section class="screen" id="guide-screen" data-screen="guide" aria-labelledby="guide-title" hidden>
+        <button class="back-button" type="button" data-back="result">← 区画表示へ戻る</button>
+
+        <div class="screen-heading">
+          <p class="step-label">STEP 4</p>
+          <h1 id="guide-title" tabindex="-1">区画までの案内</h1>
+          <p>周囲の車と歩行者を確認し、場内ではゆっくり進んでください。</p>
+        </div>
+
+        <article class="guide-summary">
+          <p>案内先</p>
+          <p id="guide-space-number" class="guide-space-number"></p>
+          <p id="guide-facility-name"></p>
+        </article>
+
+        <ol class="direction-list">
+          <li>
+            <span class="direction-number">1</span>
+            <div>
+              <h2>駐車場入口から直進</h2>
+              <p>案内表示を確認しながら、B列の標識まで進みます。</p>
+            </div>
+          </li>
+          <li>
+            <span class="direction-number">2</span>
+            <div>
+              <h2>B列を店舗入口の方向へ進む</h2>
+              <p>一方通行や停止線がある場合は、現地の表示を優先してください。</p>
+            </div>
+          </li>
+          <li>
+            <span class="direction-number">3</span>
+            <div>
+              <h2 id="final-direction-title">案内先に到着</h2>
+              <p>画面の区画番号と、路面に表示された番号が同じか確認します。</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="safety-note" role="note">
+          <strong>安全のために</strong>
+          <p>運転中の画面操作は同乗者が行うか、安全な場所に停車してから行ってください。</p>
+        </div>
+
+        <button class="primary-button full-width" type="button" data-go-home>最初の画面へ戻る</button>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>岡山理科大学 卒業研究用試作</p>
+      <p>実際の運用時は、カメラによる判定データと正式な駐車場図に置き換えます。</p>
+    </footer>
+  </body>
+</html>
