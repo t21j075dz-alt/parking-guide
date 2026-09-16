@@ -28,7 +28,7 @@
       <div class="header-inner">
         <a class="site-name" href="#facility" data-go-home aria-label="駐車場空き区画案内の最初の画面へ戻る">
           <span class="parking-symbol" aria-hidden="true">P</span>
-          <span>駐車場空き区画案内</span>
+          <span>空き駐車枠自動案内サービス(仮)</span>
         </a>
 
         <!-- 文字サイズ設定は端末内に保存し、次回も同じ設定で表示 -->
@@ -49,27 +49,27 @@
         <ol class="progress-list">
           <li class="progress-item is-current" data-progress="facility" aria-current="step">
             <span class="progress-number">1</span>
-            <span>駐車場</span>
+            <span>利用施設選択</span>
           </li>
           <li class="progress-item" data-progress="condition">
             <span class="progress-number">2</span>
-            <span>条件</span>
+            <span>駐車枠探索条件入力</span>
           </li>
           <li class="progress-item" data-progress="result">
             <span class="progress-number">3</span>
-            <span>区画</span>
+            <span>案内先駐車枠表示</span>
           </li>
           <li class="progress-item" data-progress="guide">
             <span class="progress-number">4</span>
-            <span>案内</span>
+            <span>詳細案内</span>
           </li>
         </ol>
       </nav>
 
       <!-- 現在はカメラと接続していないため、誤解がないよう全画面で明示します。 -->
       <aside class="demo-notice" aria-label="デモデータについて">
-        <strong>研究用デモ</strong>
-        <span>カメラ未接続のため空き台数・距離・区画情報は動作確認用の仮データです。</span>
+        <strong>研究用デモサイト</strong>
+        <span>デモアプリのため空き台数・距離・区画情報は動作確認用の仮データです。</span>
       </aside>
 
       <!-- 画面1：現在地の取得と駐車場の選択 -->
@@ -77,7 +77,7 @@
         <div class="screen-heading">
           <p class="step-label">STEP 1</p>
           <h1 id="facility-title" tabindex="-1">利用する駐車場を選択</h1>
-          <p>現在地を取得すると、登録した駐車場までの距離を計算できます。</p>
+          <p>現在地を取得すると、登録した駐車場までの直線距離を計算できます。</p>
         </div>
 
         <div class="location-panel">
@@ -103,18 +103,18 @@
         aria-labelledby="condition-title"
         hidden
       >
-        <button class="back-button" type="button" data-back="facility">← 駐車場選択へ戻る</button>
+        <button class="back-button" type="button" data-back="facility">← 利用施設選択へ戻る</button>
 
         <div class="screen-heading">
           <p class="step-label">STEP 2</p>
-          <h1 id="condition-title" tabindex="-1">希望する区画を選ぶ</h1>
+          <h1 id="condition-title" tabindex="-1">希望する駐車枠を選択</h1>
           <p id="selected-facility-name" class="selected-place"></p>
         </div>
 
         <form id="condition-form">
           <fieldset class="condition-fieldset">
-            <legend>何を優先しますか</legend>
-            <p class="fieldset-help">1つ選んでください。あとから変更できます。</p>
+            <legend>何を優先するか選択</legend>
+            <p class="fieldset-help">1つ選択してください。あとから変更可能です。</p>
 
             <div class="choice-list">
               <label class="choice-card">
@@ -247,7 +247,7 @@
         </ol>
 
         <div class="safety-note" role="note">
-          <strong>安全のために</strong>
+          <strong>法令順守のために</strong>
           <p>運転中の画面操作は同乗者が行うか、安全な場所に停車してから行ってください。</p>
         </div>
 
@@ -257,7 +257,7 @@
 
     <footer class="site-footer">
       <p>岡山理科大学 卒業研究用試作</p>
-      <p>試作ページです。</p>
+      <p>試作ページです。実際の駐車場とは関係ありません。</p>
     </footer>
   </body>
 </html>
