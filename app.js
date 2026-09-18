@@ -41,6 +41,74 @@ const FACILITIES = [
     longitude: 133.9106,
     demoDistance: 4.0,
   },
+
+  // ここから追加した7件。
+  {
+    id: "ous-main-gate-experiment",
+    name: "実験用駐車場（岡山理科大学正門）",
+    address: "岡山県岡山市北区理大町1-1 岡山理科大学正門",
+    availableCount: 8,
+    // 正門を実験場所として登録。座標は大学周辺の仮値。
+    latitude: 34.6998,
+    longitude: 133.9280,
+    demoDistance: 0.8,
+  },
+  {
+    id: "handsman-kusami",
+    // 「朽網店」は公式表記の「くさみ店」で登録。
+    name: "ハンズマンくさみ店",
+    address: "福岡県北九州市小倉南区大字朽網字草見3914-21",
+    availableCount: 8,
+    latitude: 33.8073,
+    longitude: 130.9673,
+    demoDistance: 285.0,
+  },
+  {
+    id: "handsman-onojo",
+    name: "ハンズマン大野城店",
+    address: "福岡県大野城市南大利1丁目5番1号",
+    availableCount: 8,
+    latitude: 33.5127,
+    longitude: 130.4766,
+    demoDistance: 337.0,
+  },
+  {
+    id: "cainz-okayama-minami",
+    // 「岡山岡南店」は、岡南地区の「岡山南店」を想定。
+    name: "カインズ岡山南店",
+    address: "岡山県岡山市南区海岸通2丁目4-15",
+    availableCount: 8,
+    latitude: 34.5963,
+    longitude: 133.9323,
+    demoDistance: 8.5,
+  },
+  {
+    id: "marunaka-nakaicho",
+    name: "マルナカ中井町店",
+    address: "岡山県岡山市北区中井町1丁目280-2",
+    availableCount: 8,
+    latitude: 34.6819,
+    longitude: 133.9260,
+    demoDistance: 2.0,
+  },
+  {
+    id: "marunaka-muscat",
+    name: "マルナカマスカット店",
+    address: "岡山県倉敷市松島1154-2",
+    availableCount: 8,
+    latitude: 34.6277,
+    longitude: 133.7999,
+    demoDistance: 12.5,
+  },
+  {
+    id: "marunaka-sanyo",
+    name: "マルナカ山陽店",
+    address: "岡山県赤磐市下市133",
+    availableCount: 8,
+    latitude: 34.7505,
+    longitude: 134.0151,
+    demoDistance: 13.0,
+  },
 ];
 
 /** 希望条件の表示名。結果画面のバッジでも同じ表記を使う。 */
