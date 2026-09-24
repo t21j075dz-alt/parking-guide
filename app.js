@@ -3,8 +3,8 @@
 /* =========================================================
    駐車場空き区画案内：画面制御
 
-   現段階では、駐車場・空き区画ともにデモデータを使用する。
-   施設選択・絞り込み・デモ案内を管理する。
+   実店舗は facilities.js、元の研究用施設は本ファイルで管理する。
+   施設選択・絞り込み・デモ案内を管理する。空車情報との連携はない。
    位置情報と運転確認は location-safety.js で管理する。
    ========================================================= */
 
@@ -13,7 +13,7 @@
  * latitude・longitude は画面動作を確認するための仮座標であり、
  * 実運用前に現地計測または正式な施設データへ差し替える。
  */
-const FACILITIES = [
+const DEMO_FACILITIES = [
   {
     id: "lamu-okayama-chuo",
     name: "ラ・ムー岡山中央店",
@@ -137,6 +137,12 @@ const FACILITIES = [
   },
 ];
 
+/** 元の仮データは明示的にデモとして扱い、実店舗の集計に含めない。 */
+const FACILITIES = [
+  ...FACILITY_CATALOG,
+  ...DEMO_FACILITIES.map((facility) => ({ ...facility, isDemo: true })),
+];
+
 /** カテゴリの表示名。未登録のカテゴリも絞り込みに使用できる。 */
 const CATEGORY_LABELS = {
   "home-center": "ホームセンター",
@@ -165,6 +171,8 @@ const state = {
   searchSequence: 0,
   searchRequestId: 0,
   filters: { prefecture: "", municipality: "", category: "" },
+  visibleLimit: 50,
+  sortedFacilities: [],
 };
 
 /* =========================================================
@@ -180,6 +188,9 @@ const resetFiltersButton = document.querySelector("#reset-filters-button");
 const sortDistanceButton = document.querySelector("#sort-distance-button");
 const facilityCount = document.querySelector("#facility-count");
 const facilityEmpty = document.querySelector("#facility-empty");
+const includeCandidatesFilter = document.querySelector("#include-candidates-filter");
+const showDemoFilter = document.querySelector("#show-demo-filter");
+const loadMoreButton = document.querySelector("#load-more-button");
 const textSizeButton = document.querySelector("#text-size-button");
 const conditionForm = document.querySelector("#condition-form");
 const selectedFacilityName = document.querySelector("#selected-facility-name");
@@ -246,6 +257,7 @@ function initializeFilters() {
 /** 3条件のすべてに一致する施設を抽出する。空欄は条件に含めない。 */
 function getFilteredFacilities() {
   return FACILITIES.filter((facility) =>
+    (facility.isDemo ? showDemoFilter.checked : (includeCandidatesFilter.checked || facility.parkingVerification === "store")) &&
     Object.entries(state.filters).every(
       ([key, value]) => !value || facility[key] === value,
     ),
@@ -279,7 +291,10 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
  */
 function getFacilityDistance(facility) {
   if (!state.userLocation) {
-    return facility.demoDistance;
+    return facility.isDemo ? facility.demoDistance : null;
+  }
+  if (!Number.isFinite(facility.latitude) || !Number.isFinite(facility.longitude)) {
+    return null;
   }
 
   return calculateDistanceKm(
@@ -294,16 +309,24 @@ function getFacilityDistance(facility) {
  * 駐車場カードを距離順で描画する。
  * button要素を使うことで、キーボードでもそのまま選択できる。
  */
-function renderFacilities() {
-  const sortedFacilities = getFilteredFacilities().sort(
-    (first, second) => getFacilityDistance(first) - getFacilityDistance(second),
-  );
+function renderFacilities(append = false) {
+  if (append !== true) {
+    state.visibleLimit = 50;
+    state.sortedFacilities = getFilteredFacilities().sort(
+      (first, second) => (getFacilityDistance(first) ?? Infinity) - (getFacilityDistance(second) ?? Infinity),
+    );
+  }
+  const sortedFacilities = state.sortedFacilities;
 
-  facilityList.replaceChildren();
-  facilityCount.textContent = `${FACILITIES.length}件中 ${sortedFacilities.length}件を表示`;
+  const startIndex = append === true ? facilityList.children.length : 0;
+  if (append !== true) {
+    facilityList.replaceChildren();
+  }
+  facilityCount.textContent = `条件に一致：${sortedFacilities.length}件 ／ 表示：${Math.min(state.visibleLimit, sortedFacilities.length)}件`;
   facilityEmpty.hidden = sortedFacilities.length > 0;
+  loadMoreButton.hidden = sortedFacilities.length <= state.visibleLimit;
 
-  sortedFacilities.forEach((facility) => {
+  sortedFacilities.slice(startIndex, state.visibleLimit).forEach((facility) => {
     const article = document.createElement("article");
     article.className = "facility-card";
 
@@ -320,10 +343,10 @@ function renderFacilities() {
         <span class="facility-distance"></span>
       </span>
       <span class="availability-block">
-        <span class="availability-label">空きあり</span>
+        <span class="availability-label"></span>
         <span class="availability-count"></span>
       </span>
-      <span class="facility-action">この駐車場を選ぶ →</span>
+      <span class="facility-action">この施設でデモを試す →</span>
     `;
 
     /* innerHTMLへデータを直接埋め込まず、textContentで安全に設定する。 */
@@ -331,21 +354,59 @@ function renderFacilities() {
     button.querySelector(".facility-address").textContent = facility.address;
     button.querySelector(".facility-category").textContent = CATEGORY_LABELS[facility.category];
     updateFacilityDistance(button, facility);
-    button.querySelector(".availability-count").textContent = `${facility.availableCount}台`;
+    button.querySelector(".availability-label").textContent = facility.isDemo ? "空き台数（デモ）" : "実際の空き台数";
+    button.querySelector(".availability-count").textContent = facility.isDemo ? `${facility.availableCount}台` : "未取得";
 
     article.append(button);
+    if (!facility.isDemo) {
+      const information = document.createElement("div");
+      information.className = "facility-evidence";
+      const status = document.createElement("p");
+      status.className = facility.parkingVerification === "store" ? "parking-confirmed" : "parking-candidate";
+      status.textContent = facility.parkingVerification === "store" ? "駐車場の設備記載を確認" : "追加調査候補：駐車場・規模未確認";
+      const capacity = document.createElement("p");
+      capacity.textContent = facility.parkingCapacityMinimum
+        ? `資料掲載の駐車台数：${facility.parkingCapacityMinimum}台以上（共用範囲未確認）`
+        : facility.parkingCapacity
+          ? `掲載${facility.parkingCapacityScope === "listed-lot" ? "区画の" : "駐車"}台数：${facility.parkingCapacity}台（空き台数ではありません）`
+          : "駐車台数・広さ：未確認";
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = "出典・確認内容";
+      const evidence = document.createElement("p");
+      evidence.textContent = `${facility.parkingEvidence} 確認日：${facility.checkedAt}`;
+      details.append(summary, evidence);
+      [[facility.sourceUrl, "公式の店舗情報"], [facility.parkingSourceUrl, "駐車場の確認元"]].forEach(([url, label]) => {
+        if (!url || !/^https:\/\//.test(url)) {
+          return;
+        }
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = `${label}（別タブ）`;
+        details.append(link);
+      });
+      information.append(status, capacity, details);
+      article.append(information);
+    }
     facilityList.append(article);
   });
 }
 
 /** GPS更新ではカードを移動せず、距離と読み上げ内容だけを更新する。 */
 function updateFacilityDistance(button, facility) {
-  const distance = getFacilityDistance(facility).toFixed(1);
-  const source = state.userLocation ? "現在地から直線" : "デモ距離";
-  button.querySelector(".facility-distance").textContent = `${source} 約${distance} km`;
+  const distance = getFacilityDistance(facility);
+  const source = state.userLocation
+    ? (facility.coordinateKind === "map-center" ? "地図中心までの参考直線距離" : "登録座標までの直線距離")
+    : "デモ距離";
+  const distanceText = distance === null
+    ? (facility.coordinateKind === "unknown" ? "座標未確認のため距離は表示できません" : "現在地を取得すると距離を表示します")
+    : `${source} 約${distance.toFixed(1)} km`;
+  button.querySelector(".facility-distance").textContent = distanceText;
   button.setAttribute(
     "aria-label",
-    `${facility.name}、${CATEGORY_LABELS[facility.category]}、空き${facility.availableCount}台（デモ）、${source}約${distance}キロメートルを選ぶ`,
+    `${facility.name}、${CATEGORY_LABELS[facility.category]}、${facility.isDemo ? `空き${facility.availableCount}台（デモ）` : "空き台数未取得"}、${distanceText}、デモを試す`,
   );
 }
 
@@ -681,11 +742,22 @@ categoryFilter.addEventListener("change", () => {
 
 resetFiltersButton.addEventListener("click", () => {
   state.filters = { prefecture: "", municipality: "", category: "" };
+  includeCandidatesFilter.checked = false;
+  showDemoFilter.checked = false;
   initializeFilters();
   renderFacilities();
 });
 
 sortDistanceButton.addEventListener("click", renderFacilities);
+includeCandidatesFilter.addEventListener("change", renderFacilities);
+showDemoFilter.addEventListener("change", renderFacilities);
+loadMoreButton.addEventListener("click", () => {
+  const previousCount = facilityList.children.length;
+  state.visibleLimit += 50;
+  renderFacilities(true);
+  facilityList.children[previousCount]?.querySelector("button")?.focus();
+});
+document.querySelector("#catalog-summary").textContent = `全国${CATALOG_METADATA.total.toLocaleString()}店舗を登録（駐車場設備確認済み${CATALOG_METADATA.confirmed.toLocaleString()}件・追加調査候補${CATALOG_METADATA.candidates}件）。確認日：${CATALOG_METADATA.checkedAt}。`;
 
 window.addEventListener("parking:locationchange", (event) => {
   state.userLocation = event.detail.location;
