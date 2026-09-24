@@ -18,6 +18,7 @@
     >
     <link rel="stylesheet" href="./styles.css">
     <script src="./location-safety.js" defer></script>
+    <script src="./facilities.js" defer></script>
     <script src="./app.js" defer></script>
   </head>
 
@@ -70,7 +71,7 @@
       <!-- 駐車場情報がデモデータであることを全画面で表示する。 -->
       <aside class="demo-notice" aria-label="デモデータについて">
         <strong>研究用デモサイト</strong>
-        <span>施設・空き台数・区画情報は仮データです。現在地取得後の距離は、登録座標までの直線距離です。</span>
+        <span>全国の実店舗情報を掲載しています。実際の空き台数・区画配置は取得していません。区画検索と案内はすべてシミュレーションで、実際の駐車には使用できません。</span>
       </aside>
 
       <!-- =========================================================
@@ -136,6 +137,12 @@
             </div>
           </div>
           <p id="municipality-help" class="filter-help">市町村は都道府県を選ぶと選択できます。</p>
+          <div class="catalog-options">
+            <label><input id="include-candidates-filter" type="checkbox"> 駐車場未確認の追加調査候補も表示</label>
+            <label><input id="show-demo-filter" type="checkbox"> 元のデモ10施設を表示</label>
+          </div>
+          <p id="catalog-summary" class="filter-help"></p>
+          <p class="filter-help">駐車場確認済みでも、台数・広さは未確認の場合があります。掲載台数は空き台数ではありません。<a href="./収集結果.md" target="_blank" rel="noopener noreferrer">地域別の収集結果</a></p>
           <div class="filter-footer">
             <p id="facility-count" class="facility-count" role="status" aria-live="polite"></p>
             <div class="filter-actions">
@@ -147,6 +154,7 @@
         </form>
         <p id="facility-empty" class="empty-state" hidden>条件に一致する施設がありません。絞り込み条件を変更してください。</p>
         <div id="facility-list" class="facility-list" aria-label="選択できる駐車場"></div>
+        <button id="load-more-button" class="secondary-button full-width" type="button" hidden>さらに50件表示</button>
       </section>
 
       <!-- =========================================================
