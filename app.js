@@ -4,8 +4,8 @@
    駐車場空き区画案内：画面制御
 
    現段階では、駐車場・空き区画ともにデモデータを使用する。
-   カメラ判定システムが完成したら、FACILITIES と
-   createDemoParkingSpaces() の部分をAPIの取得結果に置き換える。
+   施設選択・絞り込み・デモ案内を管理する。
+   位置情報と運転確認は location-safety.js で管理する。
    ========================================================= */
 
 /**
@@ -18,6 +18,9 @@ const FACILITIES = [
     id: "lamu-okayama-chuo",
     name: "ラ・ムー岡山中央店",
     address: "岡山市北区中井町二丁目5番61号",
+    prefecture: "岡山県",
+    municipality: "岡山市",
+    category: "supermarket",
     availableCount: 12,
     latitude: 34.6841,
     longitude: 133.9262,
@@ -27,6 +30,9 @@ const FACILITIES = [
     id: "trial-okayama-toyohama",
     name: "スーパーセンタートライアル岡山豊浜店",
     address: "岡山市南区豊浜町",
+    prefecture: "岡山県",
+    municipality: "岡山市",
+    category: "supermarket",
     availableCount: 8,
     latitude: 34.6279,
     longitude: 133.9177,
@@ -36,28 +42,34 @@ const FACILITIES = [
     id: "aeon-style-okayama-aoe",
     name: "イオンスタイル岡山青江",
     address: "岡山市北区青江二丁目",
+    prefecture: "岡山県",
+    municipality: "岡山市",
+    category: "supermarket",
     availableCount: 5,
     latitude: 34.6309,
     longitude: 133.9106,
     demoDistance: 4.0,
   },
 
-  // ここから追加した7件。
   {
     id: "ous-main-gate-experiment",
     name: "実験用駐車場（岡山理科大学正門）",
     address: "岡山県岡山市北区理大町1-1 岡山理科大学正門",
+    prefecture: "岡山県",
+    municipality: "岡山市",
+    category: "experiment",
     availableCount: 8,
-    // 正門を実験場所として登録。座標は大学周辺の仮値。
     latitude: 34.6998,
     longitude: 133.9280,
     demoDistance: 0.8,
   },
   {
     id: "handsman-kusami",
-    // 「朽網店」は公式表記の「くさみ店」で登録。
     name: "ハンズマンくさみ店",
     address: "福岡県北九州市小倉南区大字朽網字草見3914-21",
+    prefecture: "福岡県",
+    municipality: "北九州市",
+    category: "home-center",
     availableCount: 8,
     latitude: 33.8073,
     longitude: 130.9673,
@@ -67,6 +79,9 @@ const FACILITIES = [
     id: "handsman-onojo",
     name: "ハンズマン大野城店",
     address: "福岡県大野城市南大利1丁目5番1号",
+    prefecture: "福岡県",
+    municipality: "大野城市",
+    category: "home-center",
     availableCount: 8,
     latitude: 33.5127,
     longitude: 130.4766,
@@ -74,9 +89,11 @@ const FACILITIES = [
   },
   {
     id: "cainz-okayama-minami",
-    // 「岡山岡南店」は、岡南地区の「岡山南店」を想定。
     name: "カインズ岡山南店",
     address: "岡山県岡山市南区海岸通2丁目4-15",
+    prefecture: "岡山県",
+    municipality: "岡山市",
+    category: "home-center",
     availableCount: 8,
     latitude: 34.5963,
     longitude: 133.9323,
@@ -86,6 +103,9 @@ const FACILITIES = [
     id: "marunaka-nakaicho",
     name: "マルナカ中井町店",
     address: "岡山県岡山市北区中井町1丁目280-2",
+    prefecture: "岡山県",
+    municipality: "岡山市",
+    category: "supermarket",
     availableCount: 8,
     latitude: 34.6819,
     longitude: 133.9260,
@@ -95,6 +115,9 @@ const FACILITIES = [
     id: "marunaka-muscat",
     name: "マルナカマスカット店",
     address: "岡山県倉敷市松島1154-2",
+    prefecture: "岡山県",
+    municipality: "倉敷市",
+    category: "supermarket",
     availableCount: 8,
     latitude: 34.6277,
     longitude: 133.7999,
@@ -104,12 +127,23 @@ const FACILITIES = [
     id: "marunaka-sanyo",
     name: "マルナカ山陽店",
     address: "岡山県赤磐市下市133",
+    prefecture: "岡山県",
+    municipality: "赤磐市",
+    category: "supermarket",
     availableCount: 8,
     latitude: 34.7505,
     longitude: 134.0151,
     demoDistance: 13.0,
   },
 ];
+
+/** カテゴリの表示名。未登録のカテゴリも絞り込みに使用できる。 */
+const CATEGORY_LABELS = {
+  "home-center": "ホームセンター",
+  supermarket: "スーパーマーケット",
+  drugstore: "ドラッグストア",
+  experiment: "実験用駐車場",
+};
 
 /** 希望条件の表示名。結果画面のバッジでも同じ表記を使う。 */
 const PRIORITY_LABELS = {
@@ -129,12 +163,23 @@ const state = {
   recommendedSpace: null,
   userLocation: null,
   searchSequence: 0,
+  searchRequestId: 0,
+  filters: { prefecture: "", municipality: "", category: "" },
 };
 
-/* よく使う要素を最初に取得し、処理の途中で何度も検索しない。 */
+/* =========================================================
+   DOM参照
+   ========================================================= */
+
 const facilityList = document.querySelector("#facility-list");
-const locationButton = document.querySelector("#location-button");
-const locationStatus = document.querySelector("#location-status");
+const filterForm = document.querySelector("#facility-filter-form");
+const prefectureFilter = document.querySelector("#prefecture-filter");
+const municipalityFilter = document.querySelector("#municipality-filter");
+const categoryFilter = document.querySelector("#category-filter");
+const resetFiltersButton = document.querySelector("#reset-filters-button");
+const sortDistanceButton = document.querySelector("#sort-distance-button");
+const facilityCount = document.querySelector("#facility-count");
+const facilityEmpty = document.querySelector("#facility-empty");
 const textSizeButton = document.querySelector("#text-size-button");
 const conditionForm = document.querySelector("#condition-form");
 const selectedFacilityName = document.querySelector("#selected-facility-name");
@@ -150,6 +195,62 @@ const retryButton = document.querySelector("#retry-button");
 const guideSpaceNumber = document.querySelector("#guide-space-number");
 const guideFacilityName = document.querySelector("#guide-facility-name");
 const finalDirectionTitle = document.querySelector("#final-direction-title");
+
+/* =========================================================
+   施設の絞り込みと距離表示
+   ========================================================= */
+
+/** 選択肢を作り直し、指定した選択値を反映する。 */
+function setSelectOptions(select, items, defaultLabel, selectedValue = "") {
+  select.replaceChildren(new Option(defaultLabel, ""));
+  items.forEach(([value, label]) => select.add(new Option(label, value)));
+  select.value = selectedValue;
+}
+
+/** 施設に登録された値を重複なく日本語順に取得する。 */
+function getDistinctValues(facilities, key) {
+  return [...new Set(facilities.map((facility) => facility[key]))].sort(
+    (first, second) => first.localeCompare(second, "ja"),
+  );
+}
+
+/** 都道府県に属する市町村を表示し、親条件と矛盾する選択を防ぐ。 */
+function updateMunicipalityOptions() {
+  const { prefecture } = state.filters;
+  const municipalities = prefecture
+    ? getDistinctValues(
+        FACILITIES.filter((facility) => facility.prefecture === prefecture),
+        "municipality",
+      )
+    : [];
+
+  setSelectOptions(
+    municipalityFilter,
+    municipalities.map((value) => [value, value]),
+    prefecture ? "すべての市町村" : "先に都道府県を選択",
+  );
+  municipalityFilter.disabled = !prefecture;
+}
+
+/** 初期の選択肢を施設データとカテゴリ定義から作る。 */
+function initializeFilters() {
+  setSelectOptions(
+    prefectureFilter,
+    getDistinctValues(FACILITIES, "prefecture").map((value) => [value, value]),
+    "すべての都道府県",
+  );
+  setSelectOptions(categoryFilter, Object.entries(CATEGORY_LABELS), "すべてのカテゴリ");
+  updateMunicipalityOptions();
+}
+
+/** 3条件のすべてに一致する施設を抽出する。空欄は条件に含めない。 */
+function getFilteredFacilities() {
+  return FACILITIES.filter((facility) =>
+    Object.entries(state.filters).every(
+      ([key, value]) => !value || facility[key] === value,
+    ),
+  );
+}
 
 /**
  * 2地点の緯度・経度から直線距離を求める。
@@ -169,7 +270,8 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
       Math.cos(endLatitude) *
       Math.sin(longitudeDifference / 2) ** 2;
 
-  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const clampedA = Math.min(1, Math.max(0, a));
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(clampedA), Math.sqrt(1 - clampedA));
 }
 
 /**
@@ -193,14 +295,15 @@ function getFacilityDistance(facility) {
  * button要素を使うことで、キーボードでもそのまま選択できる。
  */
 function renderFacilities() {
-  const sortedFacilities = [...FACILITIES].sort(
+  const sortedFacilities = getFilteredFacilities().sort(
     (first, second) => getFacilityDistance(first) - getFacilityDistance(second),
   );
 
   facilityList.replaceChildren();
+  facilityCount.textContent = `${FACILITIES.length}件中 ${sortedFacilities.length}件を表示`;
+  facilityEmpty.hidden = sortedFacilities.length > 0;
 
   sortedFacilities.forEach((facility) => {
-    const distance = getFacilityDistance(facility).toFixed(1);
     const article = document.createElement("article");
     article.className = "facility-card";
 
@@ -208,15 +311,12 @@ function renderFacilities() {
     button.className = "facility-button";
     button.type = "button";
     button.dataset.facilityId = facility.id;
-    button.setAttribute(
-      "aria-label",
-      `${facility.name}、空きあり、デモ表示${facility.availableCount}台、距離${distance}キロメートルを選ぶ`,
-    );
 
     button.innerHTML = `
       <span class="facility-main">
         <span class="facility-name"></span>
         <span class="facility-address"></span>
+        <span class="facility-category"></span>
         <span class="facility-distance"></span>
       </span>
       <span class="availability-block">
@@ -229,15 +329,39 @@ function renderFacilities() {
     /* innerHTMLへデータを直接埋め込まず、textContentで安全に設定する。 */
     button.querySelector(".facility-name").textContent = facility.name;
     button.querySelector(".facility-address").textContent = facility.address;
-    button.querySelector(".facility-distance").textContent = `${
-      state.userLocation ? "現在地から直線" : "デモ距離"
-    } 約${distance} km`;
+    button.querySelector(".facility-category").textContent = CATEGORY_LABELS[facility.category];
+    updateFacilityDistance(button, facility);
     button.querySelector(".availability-count").textContent = `${facility.availableCount}台`;
 
     article.append(button);
     facilityList.append(article);
   });
 }
+
+/** GPS更新ではカードを移動せず、距離と読み上げ内容だけを更新する。 */
+function updateFacilityDistance(button, facility) {
+  const distance = getFacilityDistance(facility).toFixed(1);
+  const source = state.userLocation ? "現在地から直線" : "デモ距離";
+  button.querySelector(".facility-distance").textContent = `${source} 約${distance} km`;
+  button.setAttribute(
+    "aria-label",
+    `${facility.name}、${CATEGORY_LABELS[facility.category]}、空き${facility.availableCount}台（デモ）、${source}約${distance}キロメートルを選ぶ`,
+  );
+}
+
+/** 位置情報が更新された場合も、フォーカスとカードの並び順を保つ。 */
+function updateFacilityDistances() {
+  facilityList.querySelectorAll("[data-facility-id]").forEach((button) => {
+    const facility = FACILITIES.find((item) => item.id === button.dataset.facilityId);
+    if (facility) {
+      updateFacilityDistance(button, facility);
+    }
+  });
+}
+
+/* =========================================================
+   画面遷移
+   ========================================================= */
 
 /**
  * 指定した画面だけを表示する。
@@ -269,73 +393,33 @@ function showScreen(screenName, options = {}) {
 
   state.currentScreen = screenName;
 
+  if (screenName === "facility") {
+    renderFacilities();
+  }
+
   if (addHistory) {
     window.history.pushState({ screen: screenName }, "", `#${screenName}`);
   }
 
   window.scrollTo({ top: 0, behavior: "auto" });
 
-  if (moveFocus) {
+  if (moveFocus && !document.querySelector("#driving-dialog").open) {
     document.querySelector(`#${screenName}-title`)?.focus();
   }
 }
 
-/**
- * 端末の位置情報を取得する。
- * 位置情報が拒否された場合も、デモ距離のまま操作を続けられる。
- */
-function requestCurrentLocation() {
-  if (!navigator.geolocation) {
-    locationStatus.textContent = "この端末では現在地を取得できません。デモ距離で続けられます。";
-    locationStatus.classList.add("is-error");
-    return;
-  }
-
-  locationButton.disabled = true;
-  locationButton.textContent = "取得中…";
-  locationStatus.textContent = "端末の位置情報を確認しています";
-  locationStatus.classList.remove("is-error");
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      state.userLocation = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      };
-
-      locationStatus.textContent = "取得しました。仮座標を使った直線距離順で表示しています。";
-      locationButton.textContent = "現在地を再取得";
-      locationButton.disabled = false;
-      renderFacilities();
-    },
-    (error) => {
-      const messages = {
-        1: "位置情報の利用が許可されませんでした。デモ距離で続けられます。",
-        2: "現在地を確認できませんでした。通信状態を確認してください。",
-        3: "現在地の取得に時間がかかりました。もう一度お試しください。",
-      };
-
-      locationStatus.textContent = messages[error.code] ?? "現在地を取得できませんでした。";
-      locationStatus.classList.add("is-error");
-      locationButton.textContent = "もう一度取得";
-      locationButton.disabled = false;
-    },
-    {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 300000,
-    },
-  );
-}
+/* =========================================================
+   デモの区画検索と案内
+   ========================================================= */
 
 /**
  * B列12区画分のデモ判定結果を作る。
  * searchSequenceを加えることで、「空き状況を更新」を押すと配置が変わる。
  */
-function createDemoParkingSpaces() {
+function createDemoParkingSpaces(searchSequence = state.searchSequence) {
   const baseOccupied = [2, 5, 8, 11];
   const shiftedOccupied = baseOccupied.map(
-    (number) => ((number + state.searchSequence - 1) % 12) + 1,
+    (number) => ((number + searchSequence - 1) % 12) + 1,
   );
 
   return Array.from({ length: 12 }, (_, index) => {
@@ -364,10 +448,7 @@ function selectRecommendedSpace(spaces, priority) {
   }
 
   if (priority === "wide") {
-    return (
-      availableSpaces.find((space) => space.isWide) ??
-      availableSpaces[0]
-    );
+    return availableSpaces.find((space) => space.isWide) ?? availableSpaces[0];
   }
 
   /* おまかせでは、入口まで60m以内の区画から中央寄りを選ぶ。 */
@@ -419,10 +500,14 @@ function renderParkingMap(spaces, recommendedSpace) {
  * デモの空き区画検索を実行し、結果画面を更新する。
  * 短い待ち時間を設け、通信処理を接続した際の状態も確認できるようにする。
  */
-function runSpaceSearch(priorityOverride = null) {
+async function runSpaceSearch(priorityOverride = null) {
+  if (!window.parkingSafety.guardOperation()) {
+    return { cancelled: true };
+  }
+
   if (!state.selectedFacility) {
     showScreen("facility");
-    return Promise.reject(new Error("駐車場が選択されていません。"));
+    return { cancelled: true };
   }
 
   const checkedPriority = conditionForm.querySelector('input[name="priority"]:checked');
@@ -432,7 +517,16 @@ function runSpaceSearch(priorityOverride = null) {
   const matchingRadio = conditionForm.querySelector(
     `input[name="priority"][value="${state.selectedPriority}"]`,
   );
-  if (matchingRadio) matchingRadio.checked = true;
+  if (matchingRadio) {
+    matchingRadio.checked = true;
+  }
+
+  /* 遅れて届く検索結果で、別施設や新しい検索の結果を上書きしない。 */
+  const requestId = ++state.searchRequestId;
+  const facility = state.selectedFacility;
+  const priority = state.selectedPriority;
+  const sequence = state.searchSequence;
+  state.recommendedSpace = null;
 
   if (state.currentScreen !== "result") {
     showScreen("result");
@@ -442,25 +536,36 @@ function runSpaceSearch(priorityOverride = null) {
 
   return new Promise((resolve) => {
     window.setTimeout(() => {
-      const spaces = createDemoParkingSpaces();
-      state.recommendedSpace = selectRecommendedSpace(spaces, state.selectedPriority);
+      if (requestId !== state.searchRequestId || state.selectedFacility !== facility) {
+        resolve({ cancelled: true });
+        return;
+      }
+
+      const spaces = createDemoParkingSpaces(sequence);
+      state.recommendedSpace = selectRecommendedSpace(spaces, priority);
+
+      if (!state.recommendedSpace) {
+        searchStatus.textContent = "条件に合う空き区画はありません。条件を変更してください。";
+        resolve({ facility: facility.name, spaceId: null, priority });
+        return;
+      }
 
       spaceNumber.textContent = state.recommendedSpace.id;
       spaceDescription.textContent = `店舗入口まで約${state.recommendedSpace.entranceDistanceMeters} m（デモ値）`;
-      priorityBadge.textContent = PRIORITY_LABELS[state.selectedPriority];
+      priorityBadge.textContent = PRIORITY_LABELS[priority];
       updatedTime.textContent = `更新 ${new Intl.DateTimeFormat("ja-JP", {
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date())}`;
 
       renderParkingMap(spaces, state.recommendedSpace);
-      searchStatus.textContent = `${state.selectedFacility.name}の空き区画を見つけました。`;
+      searchStatus.textContent = `${facility.name}の空き区画を見つけました。`;
       resultContent.hidden = false;
 
       resolve({
-        facility: state.selectedFacility.name,
+        facility: facility.name,
         spaceId: state.recommendedSpace.id,
-        priority: state.selectedPriority,
+        priority,
         entranceDistanceMeters: state.recommendedSpace.entranceDistanceMeters,
       });
     }, 550);
@@ -479,6 +584,10 @@ function prepareGuideScreen() {
   finalDirectionTitle.textContent = `${state.recommendedSpace.id} に到着`;
   showScreen("guide");
 }
+
+/* =========================================================
+   表示設定と初期化
+   ========================================================= */
 
 /**
  * 文字サイズ設定を切り替え、端末内へ保存する。
@@ -515,6 +624,7 @@ function restoreTextSize() {
 
 /** 最初の画面へ戻り、前回の選択結果を初期化する。 */
 function resetApplication() {
+  state.searchRequestId += 1;
   state.selectedFacility = null;
   state.selectedPriority = "balanced";
   state.recommendedSpace = null;
@@ -529,20 +639,58 @@ function resetApplication() {
 
 facilityList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-facility-id]");
-  if (!button) return;
+  if (!button) {
+    return;
+  }
 
   state.selectedFacility = FACILITIES.find(
     (facility) => facility.id === button.dataset.facilityId,
   );
 
-  if (!state.selectedFacility) return;
+  if (!state.selectedFacility) {
+    return;
+  }
+
+  state.searchRequestId += 1;
+  state.recommendedSpace = null;
 
   selectedFacilityName.textContent = `選択中：${state.selectedFacility.name}`;
   showScreen("condition");
 });
 
-locationButton.addEventListener("click", requestCurrentLocation);
 textSizeButton.addEventListener("click", toggleTextSize);
+
+filterForm.addEventListener("submit", (event) => event.preventDefault());
+
+prefectureFilter.addEventListener("change", () => {
+  state.filters.prefecture = prefectureFilter.value;
+  state.filters.municipality = "";
+  updateMunicipalityOptions();
+  renderFacilities();
+});
+
+municipalityFilter.addEventListener("change", () => {
+  state.filters.municipality = municipalityFilter.value;
+  renderFacilities();
+});
+
+categoryFilter.addEventListener("change", () => {
+  state.filters.category = categoryFilter.value;
+  renderFacilities();
+});
+
+resetFiltersButton.addEventListener("click", () => {
+  state.filters = { prefecture: "", municipality: "", category: "" };
+  initializeFilters();
+  renderFacilities();
+});
+
+sortDistanceButton.addEventListener("click", renderFacilities);
+
+window.addEventListener("parking:locationchange", (event) => {
+  state.userLocation = event.detail.location;
+  updateFacilityDistances();
+});
 
 conditionForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -569,6 +717,11 @@ document.querySelectorAll("[data-go-home]").forEach((element) => {
 
 /* ブラウザの戻る操作でも、1つ前の画面へ移動できる。 */
 window.addEventListener("popstate", (event) => {
+  if (!window.parkingSafety.guardOperation()) {
+    window.history.pushState({ screen: state.currentScreen }, "", `#${state.currentScreen}`);
+    return;
+  }
+
   const requestedScreen = event.state?.screen;
   const canOpenScreen =
     requestedScreen === "facility" ||
@@ -580,77 +733,89 @@ window.addEventListener("popstate", (event) => {
   });
 });
 
+/* =========================================================
+   任意のWebMCP連携
+   ========================================================= */
+
 /**
  * 対応ブラウザでは、画面と同じ「空き区画を探す」操作を
  * WebMCPの構造化ツールとして登録する。未対応ブラウザでは何もしない。
  */
-function registerWebMcpTool() {
+async function registerWebMcpTool() {
   const context = document.modelContext;
-  if (!context?.registerTool) return;
+  if (!context?.registerTool) {
+    return;
+  }
 
   const lifecycle = new AbortController();
 
-  const registration = context.registerTool(
-    {
-      name: "find_parking_space",
-      title: "空き区画を探す",
-      description:
-        "研究用デモ駐車場と希望条件を選び、画面上におすすめの空き区画を表示します。",
-      inputSchema: {
-        type: "object",
-        properties: {
-          facilityId: {
-            type: "string",
-            enum: FACILITIES.map((facility) => facility.id),
-            description: "駐車場を表すID",
-          },
-          priority: {
-            type: "string",
-            enum: Object.keys(PRIORITY_LABELS),
-            description: "balanced、near、wideのいずれか",
-          },
-        },
-        required: ["facilityId", "priority"],
-        additionalProperties: false,
-      },
-      annotations: {
-        readOnlyHint: false,
-        untrustedContentHint: false,
-      },
-      async execute(input) {
-        if (!input || typeof input !== "object" || Array.isArray(input)) {
-          throw new TypeError("入力はオブジェクトで指定してください。 ");
-        }
-
-        const inputKeys = Object.keys(input);
-        const hasUnknownKey = inputKeys.some(
-          (key) => !["facilityId", "priority"].includes(key),
-        );
-        const facility = FACILITIES.find(
-          (item) => item.id === input.facilityId,
-        );
-        const isKnownPriority = Object.hasOwn(PRIORITY_LABELS, input.priority);
-
-        if (hasUnknownKey || !facility || !isKnownPriority) {
-          throw new TypeError("駐車場IDまたは希望条件が正しくありません。 ");
-        }
-
-        state.selectedFacility = facility;
-        selectedFacilityName.textContent = `選択中：${facility.name}`;
-        const result = await runSpaceSearch(input.priority);
-
-        return {
-          ...result,
-          demoData: true,
-        };
-      },
-    },
-    { signal: lifecycle.signal },
-  );
-
-  /* 登録失敗が通常の画面操作へ影響しないよう、エラーはここで止める。 */
-  void Promise.resolve(registration).catch(() => {});
   window.addEventListener("pagehide", () => lifecycle.abort(), { once: true });
+
+  try {
+    await context.registerTool(
+      {
+        name: "find_parking_space",
+        title: "空き区画を探す",
+        description:
+          "研究用デモ駐車場と希望条件を選び、画面上におすすめの空き区画を表示します。",
+        inputSchema: {
+          type: "object",
+          properties: {
+            facilityId: {
+              type: "string",
+              enum: FACILITIES.map((facility) => facility.id),
+              description: "駐車場を表すID",
+            },
+            priority: {
+              type: "string",
+              enum: Object.keys(PRIORITY_LABELS),
+              description: "balanced、near、wideのいずれか",
+            },
+          },
+          required: ["facilityId", "priority"],
+          additionalProperties: false,
+        },
+        annotations: {
+          readOnlyHint: false,
+          untrustedContentHint: false,
+        },
+        async execute(input) {
+          if (!window.parkingSafety.guardOperation()) {
+            throw new Error("運転確認が必要です。画面上で安全を確認してから再実行してください。");
+          }
+
+          if (!input || typeof input !== "object" || Array.isArray(input)) {
+            throw new TypeError("入力はオブジェクトで指定してください。");
+          }
+
+          const inputKeys = Object.keys(input);
+          const hasUnknownKey = inputKeys.some(
+            (key) => !["facilityId", "priority"].includes(key),
+          );
+          const facility = FACILITIES.find(
+            (item) => item.id === input.facilityId,
+          );
+          const isKnownPriority = Object.hasOwn(PRIORITY_LABELS, input.priority);
+
+          if (hasUnknownKey || !facility || !isKnownPriority) {
+            throw new TypeError("駐車場IDまたは希望条件が正しくありません。");
+          }
+
+          state.selectedFacility = facility;
+          selectedFacilityName.textContent = `選択中：${facility.name}`;
+          const result = await runSpaceSearch(input.priority);
+
+          return {
+            ...result,
+            demoData: true,
+          };
+        },
+      },
+      { signal: lifecycle.signal },
+    );
+  } catch {
+    /* 任意の連携が未対応または登録に失敗しても、画面操作は続けられる。 */
+  }
 }
 
 /* =========================================================
@@ -658,7 +823,7 @@ function registerWebMcpTool() {
    ========================================================= */
 
 restoreTextSize();
-renderFacilities();
+initializeFilters();
 window.history.replaceState({ screen: "facility" }, "", "#facility");
 showScreen("facility", { addHistory: false, moveFocus: false });
-registerWebMcpTool();
+void registerWebMcpTool();
